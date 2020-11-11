@@ -1,4 +1,8 @@
 import pygame as pg
+import random
+import os
+
+os.environ['SDL_VIDEO_CENTERED'] = '1'
 
 SIZE = WIDTH, HEIGHT = 800, 600
 
@@ -11,11 +15,15 @@ screen = pg.display.set_mode(SIZE)
 
 FPS = 120
 clock = pg.time.Clock()
+
 '''
 bg_image = pg.image.load('Image/road.jpg')
 bg_image_rect = bg_image.get_rect(topleft=(0, 0))
 bg_image2_rect = bg_image.get_rect(topleft=(0, -HEIGHT))
 '''
+
+cars = [pg.image.load('Image/car1.png'), pg.image.load('Image/car2.png'),
+        pg.image.load('Image/car3.png')]
 
 
 class Road(pg.sprite.Sprite):
@@ -36,20 +44,59 @@ class Road(pg.sprite.Sprite):
         self.speed = 1
 
 
+
+    def update(self):
+        self.rect.y += self.speed
+        if self.rect.top >= HEIGHT:
+            self.rect.bottom = 0
+
+
 class Car(pg.sprite.Sprite):
-    def __init__(self):
+    def __init__(self, x, y, img):
         pg.sprite.Sprite.__init__(self)
-        self.image = pg.image.load('Image/car1.png')
+        self.image = pg.transform.flip(img, False, True)
+        self.speed = random.randint(2, 3)
+        self.rect = self.image.get_rect(center=(x, y))
+
+
+    def update(self):
+        self.rect.y += self.speed
+        if self.rect.top > HEIGHT:
+            self.rect.bottom = 0
+
+            list_x.remove(self.rect.centerx)
+            while True:
+                self.rect.centerx = random.randrange(80, WIDTH, 80)
+                if self.rect.centerx in list_x:
+                    continue
+                else:
+                    list_x.append(self.rect.centerx)
+                    self.speed = random.randint(2,3)
+                    break
 
 
 all_sprite = pg.sprite.Group()
 for r in range(2):
     all_sprite.add(Road(0, 0 if r == 0 else -HEIGHT))
 
+list_x = []
+n = 0
+while n < 6:
+    x = random.randrange(80, WIDTH, 80)
+    if x in list_x:
+        continue
+    else:
+        list_x.append(x)
+        all_sprite.add(Car(x, -cars[0].get_height(),cars[n] if n < len(cars) else random.choice(cars)))
+        n += 1
+
+
+'''
 car1 = Car()
 car1_image = car1.image
 car1_w, car1_h = car1.image.get_width(), car1.image.get_height()
 car1.x, car1.y = (WIDTH - car1_w) // 2, (HEIGHT - car1_h) // 2
+'''
 
 game = True
 while game:
