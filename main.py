@@ -9,16 +9,28 @@ SIZE = WIDTH, HEIGHT = 800, 600
 GREEN = (0, 128, 0)
 GREY = (120, 120, 120)
 WHI = (200, 200, 200)
+G = (0, 255, 0)
+R = (178, 34, 34)
+D = (127, 255, 212)
 
 pg.init()
 screen = pg.display.set_mode(SIZE)
 
 FPS = 120
 clock = pg.time.Clock()
+car_accident = 0
+block = False
+life = 3
+time = 0
 
 
 cars = [pg.image.load('Image/car1.png'), pg.image.load('Image/car2.png'),
         pg.image.load('Image/car3.png')]
+sound_car_accident = pg.mixer.Sound('Sound/udar.wav')
+font = pg.font.Font(None, 32)
+
+
+
 
 
 class Player(pg.sprite.Sprite):
@@ -88,6 +100,7 @@ class Player(pg.sprite.Sprite):
 
         elif self.rect.top < 1:
             self.rect.top = 4
+
         elif self.rect.bottom > 599:
             self.rect.bottom = 596
 
@@ -143,6 +156,7 @@ class Car(pg.sprite.Sprite):
 
 
 all_sprite = pg.sprite.Group()
+cars_group = pg.sprite.Group()
 for r in range(2):
     all_sprite.add(Road(0, 0 if r == 0 else -HEIGHT))
 
@@ -154,12 +168,12 @@ while n < 6:
         continue
     else:
         list_x.append(x)
-        all_sprite.add(Car(x, -cars[0].get_height(), cars[n] if n < len(cars) else random.choice(cars)))
+        cars_group.add(Car(x, -cars[0].get_height(), cars[n] if n < len(cars) else random.choice(cars)))
         n += 1
 
 
 player = Player()
-all_sprite.add(player)
+all_sprite.add(player, cars_group)
 
 
 game = True
@@ -168,12 +182,33 @@ while game:
         if e.type == pg.QUIT:
             game = False
 
+    if pg.sprite.spritecollideany(player, cars_group):
+        if block is False:
+            player.position[0] += 50 * random.randrange(-1, 2, 2)
+            player.angle = 50 * random.randrange(-1, 2, 2)
+            sound_car_accident.play()
+            car_accident += 1
+            life -= 1
+            block = True
+            print(car_accident)
+            if life == 0:
+                game = False
+    else:
+        block = False
+
+    time += 0.01
 
     all_sprite.update()
     all_sprite.draw(screen)
+    screen.blit(font.render(f'Кол-во аварий = {car_accident}', True, G), (45, 10))    
+    screen.blit(font.render(f'Жизни = {life}', True, R), (640, 10))
+    screen.blit(font.render(str(int(time)), True, D), (380, 10))
 
     pg.display.update()
     clock.tick(FPS)
     pg.display.set_caption(f'Rally          FPS: {int(clock.get_fps())}')
+
+
+
 
 '''pg.image.save(screen, 'road.jpg')'''
