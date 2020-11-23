@@ -12,6 +12,7 @@ WHI = (200, 200, 200)
 G = (0, 255, 0)
 R = (178, 34, 34)
 D = (127, 255, 212)
+O = (255, 125, 0)
 
 pg.init()
 screen = pg.display.set_mode(SIZE)
@@ -22,14 +23,23 @@ car_accident = 0
 block = False
 life = 3
 time = 0
+bt = True
 
 
+#Изображения и т.п
 cars = [pg.image.load('Image/car1.png'), pg.image.load('Image/car2.png'),
         pg.image.load('Image/car3.png')]
 sound_car_accident = pg.mixer.Sound('Sound/udar.wav')
 font = pg.font.Font(None, 32)
 
+fon = pg.image.load('Image/f.jpeg')
+fon_rect = fon.get_rect(topleft=(-50, -50))
 
+button_start = pg.image.load('Image/start_button.png')
+button_stop = pg.image.load('Image/stop_button.png')
+
+button_start_rect = button_start.get_rect(center=(630, 200))
+button_stop_rect = button_stop.get_rect(center=(630, 400))
 
 
 
@@ -124,7 +134,6 @@ class Road(pg.sprite.Sprite):
         self.speed = 1
 
 
-
     def update(self):
         self.rect.y += self.speed
         if self.rect.top >= HEIGHT:
@@ -176,11 +185,34 @@ player = Player()
 all_sprite.add(player, cars_group)
 
 
+def screen1():
+    sc = pg.Surface(screen.get_size())
+    sc.fill(pg.Color('navy'))
+    oran = pg.Surface((350, 600))
+    oran.fill(O)
+    sc.blit(fon, fon_rect)
+    sc.blit(oran, (450, 0))
+    sc.blit(button_start, button_start_rect)
+    sc.blit(button_stop, button_stop_rect)
+    screen.blit(font.render('управление стрелками', True, O), (20, 10))
+    screen.blit(sc, (0, 0))
+    
+
 game = True
 while game:
     for e in pg.event.get():
         if e.type == pg.QUIT:
             game = False
+        elif e.type == pg.MOUSEBUTTONDOWN:
+            if e.button == 1:
+                if button_start_rect.collidepoint(e.pos):
+                    bt = False
+                elif button_stop_rect.collidepoint(e.pos):
+                    game = False
+        elif e.type == pg.KEYDOWN:
+            if e.key == pg.K_ESCAPE:
+                bt = True
+    time += 0.01
 
     if pg.sprite.spritecollideany(player, cars_group):
         if block is False:
@@ -192,23 +224,23 @@ while game:
             block = True
             print(car_accident)
             if life == 0:
-                game = False
+                bt = True
+                life = life + 3
+                car_accident = 0
+                time = 0
     else:
         block = False
+    if bt:
+        screen1()
 
-    time += 0.01
-
-    all_sprite.update()
-    all_sprite.draw(screen)
-    screen.blit(font.render(f'Кол-во аварий = {car_accident}', True, G), (45, 10))    
-    screen.blit(font.render(f'Жизни = {life}', True, R), (640, 10))
-    screen.blit(font.render(str(int(time)), True, D), (380, 10))
-
+    else:
+        all_sprite.update()
+        all_sprite.draw(screen)
+        screen.blit(font.render(f'Кол-во аварий = {car_accident}', True, G), (45, 10))    
+        screen.blit(font.render(f'Жизни = {life}', True, R), (640, 10))
+        screen.blit(font.render(str(int(time)), True, D), (380, 10))
+    
     pg.display.update()
     clock.tick(FPS)
     pg.display.set_caption(f'Rally          FPS: {int(clock.get_fps())}')
-
-
-
-
 '''pg.image.save(screen, 'road.jpg')'''
