@@ -13,6 +13,8 @@ G = (0, 255, 0)
 R = (178, 34, 34)
 D = (127, 255, 212)
 O = (255, 125, 0)
+BL = (0, 0, 0)
+rgb = [0, 250, 0]
 
 pg.init()
 screen = pg.display.set_mode(SIZE)
@@ -24,13 +26,18 @@ block = False
 life = 3
 time = 0
 bt = True
-
+level = 40
 
 #Изображения и т.п
+tree = [pg.image.load('Image/wood1.png'), pg.image.load('Image/wood2.jpg')]
+
 cars = [pg.image.load('Image/car1.png'), pg.image.load('Image/car2.png'),
         pg.image.load('Image/car3.png')]
 sound_car_accident = pg.mixer.Sound('Sound/udar.wav')
 font = pg.font.Font(None, 32)
+
+can = pg.image.load('Image/fuel.png')
+can_rect = can.get_rect(topleft=(695, 6))
 
 fon = pg.image.load('Image/f.jpeg')
 fon_rect = fon.get_rect(topleft=(-50, -50))
@@ -40,7 +47,6 @@ button_stop = pg.image.load('Image/stop_button.png')
 
 button_start_rect = button_start.get_rect(center=(630, 200))
 button_stop_rect = button_stop.get_rect(center=(630, 400))
-
 
 
 class Player(pg.sprite.Sprite):
@@ -119,7 +125,6 @@ class Road(pg.sprite.Sprite):
     def __init__(self, x, y):
         pg.sprite.Sprite.__init__(self)
 
-
         self.image = pg.Surface(screen.get_size())
         self.image.fill(GREY)
         pg.draw.line(self.image, GREEN, (20, 0), (20, 600), 40)
@@ -133,20 +138,49 @@ class Road(pg.sprite.Sprite):
         self.rect = self.image.get_rect(topleft=(x, y))
         self.speed = 1
 
-
     def update(self):
         self.rect.y += self.speed
         if self.rect.top >= HEIGHT:
             self.rect.bottom = 0
 
 
+class Trees(pg.sprite.Sprite):
+    def __init__(self, x, y, img):
+        pg.sprite.Sprite.__init__(self)
+        self.image = img
+        self.rect = self.image.get_rect(center=(x, y))
+
+    def update(self):
+        pass
+        '''
+        list_x.remove(self.rect.x)
+        while True:
+            self.rect.y = random.randrange(0, 600, 88)
+            self.rect.x = random.randrange(0, 800, 760)
+            if self.rect.x in list_x:
+                continue
+            else:
+                list_x.append(self.rect.x)
+                break
+            if self.rect.y in list_y:
+                continue
+            else:
+                list_x.append(self.rect.y)
+                break
+        '''
+
+
 class Car(pg.sprite.Sprite):
     def __init__(self, x, y, img):
         pg.sprite.Sprite.__init__(self)
-        self.image = pg.transform.flip(img, False, True)
-        self.speed = random.randint(2, 3)
-        self.rect = self.image.get_rect(center=(x, y))
 
+        if img == can:
+            self.image = img
+            self.speed = 0
+        else:
+            self.image = pg.transform.flip(img, False, True)
+            self.speed = random.randint(2, 3)
+        self.rect = self.image.get_rect(center=(x, y))
 
     def update(self):
         self.rect.y += self.speed
@@ -180,9 +214,12 @@ while n < 6:
         cars_group.add(Car(x, -cars[0].get_height(), cars[n] if n < len(cars) else random.choice(cars)))
         n += 1
 
-
+for j in range(len(tree)):
+    treess = Trees(40, 100 * j + 100, tree[j])
+    all_sprite.add(treess)
 player = Player()
-all_sprite.add(player, cars_group)
+fuel = Car(720, 40, can)
+all_sprite.add(player, cars_group, fuel)
 
 
 def screen1():
@@ -194,9 +231,9 @@ def screen1():
     sc.blit(oran, (450, 0))
     sc.blit(button_start, button_start_rect)
     sc.blit(button_stop, button_stop_rect)
-    screen.blit(font.render('управление стрелками', True, O), (20, 10))
+    sc.blit(font.render('управление стрелками', True, O), (20, 10))
     screen.blit(sc, (0, 0))
-    
+
 
 game = True
 while game:
@@ -212,7 +249,10 @@ while game:
         elif e.type == pg.KEYDOWN:
             if e.key == pg.K_ESCAPE:
                 bt = True
-    time += 0.01
+    if bt is True:
+        time = time
+    else:
+        time += 0.01
 
     if pg.sprite.spritecollideany(player, cars_group):
         if block is False:
@@ -234,12 +274,22 @@ while game:
         screen1()
 
     else:
+        level -= 0.01
+        if level <= 0:
+            bt = True
+        elif level <= 10:
+            rgb[:2] = 250, 250
+        elif level <= 20:
+            rgb[0] = 250
+
         all_sprite.update()
         all_sprite.draw(screen)
-        screen.blit(font.render(f'Кол-во аварий = {car_accident}', True, G), (45, 10))    
-        screen.blit(font.render(f'Жизни = {life}', True, R), (640, 10))
+        pg.draw.rect(
+            screen, rgb,
+            (fuel.rect.left + 10, fuel.rect.bottom - level - 8, 21, level))
+        screen.blit(font.render(f'Жизни = {life}', True, BL), (50, 10))
         screen.blit(font.render(str(int(time)), True, D), (380, 10))
-    
+
     pg.display.update()
     clock.tick(FPS)
     pg.display.set_caption(f'Rally          FPS: {int(clock.get_fps())}')
