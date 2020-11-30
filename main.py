@@ -1,8 +1,14 @@
-import pygame as pg
+mport pygame as pg
 import random
 import os
 
 os.environ['SDL_VIDEO_CENTERED'] = '1'
+
+try:
+    with open('record.txt', 'x') as f:
+        f.write(str(0))
+except BaseException:
+    pass
 
 SIZE = WIDTH, HEIGHT = 800, 600
 
@@ -28,6 +34,7 @@ time = 0
 bt = True
 level = 40
 
+
 #Изображения и т.п
 tree = [pg.image.load('Image/wood1.png'), pg.image.load('Image/wood2.jpg')]
 
@@ -36,6 +43,11 @@ cars = [pg.image.load('Image/car1.png'), pg.image.load('Image/car2.png'),
 sound_car_accident = pg.mixer.Sound('Sound/udar.wav')
 font = pg.font.Font(None, 32)
 
+canister = pg.image.load('Image/canister.png')
+water = pg.image.load('Image/water.png')
+
+canister_sound = pg.mixer.Sound('Sound/canister.wav')
+
 can = pg.image.load('Image/fuel.png')
 can_rect = can.get_rect(topleft=(695, 6))
 
@@ -43,11 +55,16 @@ fon = pg.image.load('Image/f.jpeg')
 fon_rect = fon.get_rect(topleft=(-50, -50))
 
 button_start = pg.image.load('Image/start_button.png')
-button_stop = pg.image.load('Image/stop_button.png')
-
 button_start_rect = button_start.get_rect(center=(630, 200))
+
+button_stop = pg.image.load('Image/stop_button.png')
 button_stop_rect = button_stop.get_rect(center=(630, 400))
 
+u1_event = pg.USEREVENT + 1
+pg.time.set_timer(u1_event, random.randrange(6000, 26001, 4000))
+
+u2_event = pg.USEREVENT + 2
+pg.time.set_timer(u2_event, random.randrange(7000, 27001, 5000))
 
 class Player(pg.sprite.Sprite):
     def __init__(self):
@@ -143,7 +160,7 @@ class Road(pg.sprite.Sprite):
         if self.rect.top >= HEIGHT:
             self.rect.bottom = 0
 
-
+'''
 class Trees(pg.sprite.Sprite):
     def __init__(self, x, y, img):
         pg.sprite.Sprite.__init__(self)
@@ -152,7 +169,7 @@ class Trees(pg.sprite.Sprite):
 
     def update(self):
         pass
-        '''
+
         list_x.remove(self.rect.x)
         while True:
             self.rect.y = random.randrange(0, 600, 88)
@@ -167,7 +184,7 @@ class Trees(pg.sprite.Sprite):
             else:
                 list_x.append(self.rect.y)
                 break
-        '''
+'''
 
 
 class Car(pg.sprite.Sprite):
@@ -177,6 +194,11 @@ class Car(pg.sprite.Sprite):
         if img == can:
             self.image = img
             self.speed = 0
+
+        elif img == canister or img == water:
+            self.image = img
+            self.speed = 1
+
         else:
             self.image = pg.transform.flip(img, False, True)
             self.speed = random.randint(2, 3)
@@ -186,20 +208,26 @@ class Car(pg.sprite.Sprite):
         self.rect.y += self.speed
         if self.rect.top > HEIGHT:
             self.rect.bottom = 0
+            if self == canisterr or self == waterr:
+                self.kill()
 
-            list_x.remove(self.rect.centerx)
-            while True:
-                self.rect.centerx = random.randrange(80, WIDTH, 80)
-                if self.rect.centerx in list_x:
-                    continue
-                else:
-                    list_x.append(self.rect.centerx)
-                    self.speed = random.randint(2, 3)
-                    break
+            else:
+                list_x.remove(self.rect.centerx)
+                while True:
+                    self.rect.centerx = random.randrange(80, WIDTH, 80)
+                    if self.rect.centerx in list_x:
+                        continue
+                    else:
+                        list_x.append(self.rect.centerx)
+                        self.speed = random.randint(2, 3)
+                        break
 
 
 all_sprite = pg.sprite.Group()
 cars_group = pg.sprite.Group()
+canister_group = pg.sprite.Group()
+water_group = pg.sprite.Group()
+
 for r in range(2):
     all_sprite.add(Road(0, 0 if r == 0 else -HEIGHT))
 
@@ -213,16 +241,19 @@ while n < 6:
         list_x.append(x)
         cars_group.add(Car(x, -cars[0].get_height(), cars[n] if n < len(cars) else random.choice(cars)))
         n += 1
-
+'''
 for j in range(len(tree)):
     treess = Trees(40, 100 * j + 100, tree[j])
     all_sprite.add(treess)
+'''
 player = Player()
 fuel = Car(720, 40, can)
+canisterr = Car(0, 0, canister)
+waterr = Car(0, 0, water)
 all_sprite.add(player, cars_group, fuel)
 
 
-def screen1():
+def screen1(rec):
     sc = pg.Surface(screen.get_size())
     sc.fill(pg.Color('navy'))
     oran = pg.Surface((350, 600))
@@ -232,7 +263,27 @@ def screen1():
     sc.blit(button_start, button_start_rect)
     sc.blit(button_stop, button_stop_rect)
     sc.blit(font.render('управление стрелками', True, O), (20, 10))
+    sc.blit(font.render(f'{rec}', True, O), (50, 70))
     screen.blit(sc, (0, 0))
+
+
+def my_record():
+    global time
+    print(time)
+    with open('record.txt', 'r+') as d:
+        record = d.read()
+        time = int(time)
+        if time > int(record):
+            record = str(time)
+            d.seek(0)
+            d.truncate()
+            d.write(record)
+    return record
+
+
+'''
+read_line()
+'''
 
 
 game = True
@@ -244,15 +295,26 @@ while game:
             if e.button == 1:
                 if button_start_rect.collidepoint(e.pos):
                     bt = False
+
                 elif button_stop_rect.collidepoint(e.pos):
                     game = False
         elif e.type == pg.KEYDOWN:
             if e.key == pg.K_ESCAPE:
                 bt = True
-    if bt is True:
-        time = time
-    else:
-        time += 0.01
+        elif e.type == u1_event:
+            water_group.add(waterr)
+            all_sprite.add(waterr)
+            waterr.rect.center = \
+                random.randrange(80, WIDTH, 80), -waterr.rect.h
+            pg.time.set_timer(u1_event, random.randrange(6000, 26001, 4000))
+
+        elif e.type == u2_event:
+            canister_group.add(canisterr)
+            all_sprite.add(canisterr)
+            canisterr.rect.center = \
+                random.randrange(80, WIDTH, 80), -canisterr.rect.h
+            pg.time.set_timer(u2_event, random.randrange(7000, 27001, 5000))
+
 
     if pg.sprite.spritecollideany(player, cars_group):
         if block is False:
@@ -262,18 +324,31 @@ while game:
             car_accident += 1
             life -= 1
             block = True
-            print(car_accident)
+            
             if life == 0:
                 bt = True
                 life = life + 3
                 car_accident = 0
-                time = 0
+                level = 40
     else:
         block = False
+
+    if pg.sprite.spritecollide(player, canister_group, True):
+        level = 40
+        canister_sound.play()
+        rgb[::] = 0, 250, 0
+
+    elif pg.sprite.spritecollideany(player, water_group):
+        if block is False:
+            player.angle = random.randint(60, 90) * random.randrange(-1, 2, 2)
+            block = True
+
+
     if bt:
-        screen1()
+        screen1(my_record())
 
     else:
+        time += 0.01
         level -= 0.01
         if level <= 0:
             bt = True
